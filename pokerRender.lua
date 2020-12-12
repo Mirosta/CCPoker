@@ -8,6 +8,7 @@ local screen = surface.create(width, height, colors.green)
 local tenImg = surface.load("ten.nfp")
 local arrowImg = surface.load("arrow.nfp")
 local chipImg = surface.load("chip.nfp")
+local dealerImg = surface.load("dealer.nfp")
 local font = surface.loadFont(surface.load("font.bmp"))
 local suitImages = {
 	H = surface.load("heart.nfp"),
@@ -145,51 +146,76 @@ end
 
 local cardBackImg = loadImage("card_back_l.nfp")
 local playerCardBuffer = surface.create(cardBackImg.width, cardBackImg.height)
-local playerChipBuffer = surface.create(chipImg.width, chipImg.height)
+local chipBuffer = surface.create(chipImg.width, chipImg.height)
+
+function drawChips(to, chipStr, pos, rotIndex, up, right)
+	up = up or vector.new(0, -1)
+	right = right or vector.new(1, 0)
+
+	local chipsStartPos = pos - right * (5 * string.len(chipStr) + 3)
+	local chipsPos = chipsStartPos
+	local chipPosDelta = right * 5
+	for i = 1, string.len(chipStr) do
+		local char = string.sub(chipStr, i, i)
+		drawSurfaceRotatedRightAngle(to, chipImg, chipsPos.x, chipsPos.y, 0, vector.new(chipImg.width / 2, chipImg.height / 2))
+		chipsPos = chipsPos + chipPosDelta
+		if (char == "1") then
+			chipsPos = chipsPos - right
+		end
+	end
+	chipsPos = chipsStartPos
+	for i = 1, string.len(chipStr) do
+		local char = string.sub(chipStr, i, i)
+		chipBuffer:clear()
+		chipBuffer:drawText(char .. "", font, 1, 1, colors.black)
+		drawSurfaceRotatedRightAngle(to, chipBuffer, chipsPos.x, chipsPos.y, rotIndex, vector.new(chipImg.width / 2, chipImg.height / 2))
+		chipsPos = chipsPos + chipPosDelta
+		if (char == "1") then
+			chipsPos = chipsPos - right
+		end
+	end
+end
 
 function drawPlayerCards(player, matchedCardsSet, isActive, frm)
-	if player.folded or player.quit then
+	if player.quit then
 		return
 	end
+
 	local loc = playerLocations[player.location]
 	local rotIndex = math.round(loc.rot * 2 / math.pi) % 4
 	local offset = vector.new()
 	local rotatedDelta = vector.new(math.cos(loc.rot), math.sin(loc.rot))
 	local up = vector.new(rotatedDelta.y, -rotatedDelta.x)
 	offset = offset - rotatedDelta * (cardBackImg.origin.x)
+	
+	if (player.dealer and not player.flipped) then
+		local dealerPos = loc.pos + up * 11 + rotatedDelta * 8
+		drawSurfaceRotatedRightAngle(screen, dealerImg, dealerPos.x, dealerPos.y, rotIndex, vector.new(dealerImg.width / 2, dealerImg.height / 2))
+	end
+
+	if (player.drawChips or player.chips ~= nil) then
+		drawChips(screen, tostring(player.drawChips or player.chips), loc.pos + up * 2 + offset, rotIndex, up, rotatedDelta)
+	end
+
+	if (player.folded) then
+		return
+	end
+
+	if (player.bettingChips ~= nil and player.bettingChips > 0) then
+		local chipStr = tostring(player.bettingChips)
+		local betChipPos = loc.pos + up * 11 + rotatedDelta * string.len(chipStr) * 5
+		if (player.flipped) then
+			betChipPos = betChipPos + up * 5
+		end
+		drawChips(screen, chipStr, betChipPos, rotIndex, up, rotatedDelta)
+	end
 
 	if (isActive) then
-		local arrowPos = loc.pos + up * (1 + math.sin(frm / 3) * 3 + cardBackImg.height)
+		local arrowPos = loc.pos + up * (1 + math.sin(frm / 2.5) * 3 + cardBackImg.height)
 		if (loc.rot < math.pi / 4) then
 			arrowPos = arrowPos + rotatedDelta
 		end
 		drawSurfaceRotatedRightAngle(screen, arrowImg, arrowPos.x, arrowPos.y, rotIndex, vector.new(arrowImg.width / 2, arrowImg.height / 2))
-	end
-
-	if (player.chips ~= nil) then
-		local chipStr = tostring(player.chips)
-		local chipsStartPos = loc.pos + up * 2 + offset - rotatedDelta * (5 * string.len(chipStr) + 3)
-		local chipsPos = chipsStartPos
-		local chipPosDelta = rotatedDelta * 5
-		for i = 1, string.len(chipStr) do
-			local char = string.sub(chipStr, i, i)
-			drawSurfaceRotatedRightAngle(screen, chipImg, chipsPos.x, chipsPos.y, 0, vector.new(chipImg.width / 2, chipImg.height / 2))
-			chipsPos = chipsPos + chipPosDelta
-			if (char == "1") then
-				chipsPos = chipsPos - rotatedDelta
-			end
-		end
-		chipsPos = chipsStartPos
-		for i = 1, string.len(chipStr) do
-			local char = string.sub(chipStr, i, i)
-			playerChipBuffer:clear()
-			playerChipBuffer:drawText(char .. "", font, 1, 1, colors.black)
-			drawSurfaceRotatedRightAngle(screen, playerChipBuffer, chipsPos.x, chipsPos.y, rotIndex, vector.new(chipImg.width / 2, chipImg.height / 2))
-			chipsPos = chipsPos + chipPosDelta
-			if (char == "1") then
-				chipsPos = chipsPos - rotatedDelta
-			end
-		end
 	end
 
 	if (player.flipped) then
@@ -212,7 +238,7 @@ function drawPlayerCards(player, matchedCardsSet, isActive, frm)
 
 		offset = offset + rotatedDelta * (1 + cardBackImg.size.x)
 		if (player.flipped) then
-			drawCardBackground(playerCardBuffer, vector.new(), cardBackImg.size, (matchedCardsSet and matchedCardsSet[card.number .. card.suit] and colors.orange) or colors.gray)
+			drawCardBackground(playerCardBuffer, vector.new(), cardBackImg.size, (matchedCardsSet and ((matchedCardsSet[card.number .. card.suit] and colors.orange) or ((matchedCardsSet[card.number .. card.suit] == false) and colors.yellow))) or colors.gray)
 			playerCardBuffer:drawSurface(suitImages[card.suit], 2, 1)
 			drawCardText(playerCardBuffer, card.number, vector.new(), cardBackImg.size + vector.new(0, 1))
 		else
@@ -311,12 +337,29 @@ function drawBorderedText(to, text, font, x, y, color, borderColor)
 	to:drawText(text, font, x, y, color)
 end
 
-function drawFrame(frm, sharedCards, players, activePlayer, result, matchedCardsSet)
+function drawFrame(frm, gameState, sharedCards, players, activePlayer, result, matchedCardsSet, isDraw, pots, currentPot, totalPots)
 	screen:clear(colors.green)
 	
 	drawSharedCards(screen, cardLocation.pos, sharedCards, matchedCardsSet, 5)
+
+	local potTotal = 0
+	for _, pot in ipairs(pots) do
+		potTotal = potTotal + (pot.drawChips or pot.chips)
+	end
+	if (potTotal > 0) then
+		drawChips(screen, potTotal, vector.new(width / 2, height / 2 - 14), rotIndex)
+	end
+
 	drawPlayersCards(players, matchedCardsSet, activePlayer, frm)
-	if (gameState == "finish") then
+	if (gameState == "finish" and totalPots > 0) then
+		if (currentPot ~= totalPots and totalPots > 1) then
+			local currentPotStr = "Side Pot"
+			if (totalPots > 2) then
+				currentPotStr = currentPotStr .. string.format(" %d/%d", totalPots - currentPot, totalPots - 1)
+			end
+			local currentPotSize = vector.new(surface.getTextSize(currentPotStr, font))
+			drawBorderedText(screen, currentPotStr, font, math.floor((width - currentPotSize.x) / 2), math.floor(height / 2 - 14), colors.black, colors.lightGray)
+		end
 		local name = result.name
 		if (isDraw) then
 			name = "Draw - " .. name
@@ -324,6 +367,7 @@ function drawFrame(frm, sharedCards, players, activePlayer, result, matchedCards
 		local resultNameSize = vector.new(surface.getTextSize(name, font))
 		drawBorderedText(screen, name, font, math.floor((width - resultNameSize.x) / 2), math.floor(height / 2 + 11), colors.black, colors.lightGray)
 	end
+
 	screen:output(monitor)
 end
 

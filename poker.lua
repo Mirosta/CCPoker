@@ -1,21 +1,22 @@
 require("pokerRender")
 local POKER_PROTOCOL = "poker.protocol"
-local remoteMonitor = require("remoteMonitor")
 local hands = require('hands')
 
 local bigBlind = 4
 local smallBlind = 2
 
 local players = {
-	{name = "Tom", location=1, cards={}, flipped=true, quit=false, folded=false, chips=1},
-	{name = "Tom", location=3, cards={}, flipped=true, quit=false, folded=false, chips=22},
-	{name = "Tom", location=5, cards={}, flipped=true, quit=false, folded=false, chips=333},
-	{name = "Tom", location=7, cards={}, flipped=true, quit=false, folded=false, chips=4444},
-	{name = "Tom", location=6, cards={}, flipped=true, quit=false, folded=false, chips=5},
-	{name = "Tom", location=4, cards={}, flipped=true, quit=false, folded=false, chips=66},
-	{name = "Tom", location=2, cards={}, flipped=true, quit=false, folded=false, chips=77},
-	{name = "Tom", location=8, cards={}, flipped=true, quit=false, folded=false, chips=888},
+	{name = "Tom", location=1, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=2, drawChips=2, bettingChips=0},
+	{name = "Tom", location=3, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=220, drawChips=220, bettingChips=0, dealer=true},
+	{name = "Tom", location=5, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=333, drawChips=333, bettingChips=0, receiverId=1},
+	{name = "Tom", location=7, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=4444, drawChips=4444, bettingChips=0},
+	{name = "Tom", location=6, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=500, drawChips=500, bettingChips=0},
+	{name = "Tom", location=4, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=660, drawChips=660, bettingChips=0},
+	{name = "Tom", location=2, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=770, drawChips=770, bettingChips=0},
+	{name = "Tom", location=8, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=888, drawChips=888, bettingChips=0},
 }
+
+local pots = {}
 
 local sharedCards = {}
 local deck = hands.shuffledDeck()
@@ -23,6 +24,9 @@ local description = hands.describeHand(sharedCards, {})
 local result = hands.evaluateHand(description)
 local matchedCardsSet = nil
 local isDraw = false
+local currentPot = 0
+local totalPots = 0
+
 -- lobby ->
 --   preFlop -> flop -> turn -> river -> revealing -> finish -> >1 players ? goto preFlop : goto lobby
 local gameState = ""
@@ -42,25 +46,63 @@ function changeState(state)
 	elseif (state == "river") then
 		river()
 	elseif (state == "revealing") then
+		endBettingRound()
 		revealNext()
 	elseif (state == "finish") then
 		finishRound()
 	end
 end
 
+function updateActivePlayer()
+	for i = 1, #players do
+		local index = wrapPlayerIndex(activePlayer + i)
+		local player = players[index]
+		if (not player.folded and not player.quit and not player.allIn and (player.bettingChips < pots[1].bettingChips or not player.hasActed)) then
+			activePlayer = index
+			return false
+		end
+	end
+	activePlayer = wrapPlayerIndex(dealerPlayer + 1)
+	return true
+end
+
+function nextBet()
+	if (players[activePlayer].receiverId) then
+		print ("Waiting for actual player")
+		return
+	end
+	if (math.random() < 0.3) then
+		if (onFold(players[activePlayer])) then
+			return false
+		end
+	else
+		onBet(players[activePlayer], pots[1].bettingChips - players[activePlayer].bettingChips)
+	end
+	return updateActivePlayer()
+end
+
 function nextState()
 	if (gameState == "preFlop") then
-		changeState("flop")
+		if (nextBet()) then
+			changeState("flop")
+		end
 	elseif (gameState == "flop") then
-		changeState("turn")
+		if (nextBet()) then
+			changeState("turn")
+		end
 	elseif (gameState == "turn") then
-		changeState("river")
+		if (nextBet()) then
+			changeState("river")
+		end
 	elseif (gameState == "river") then
-		changeState("revealing")
+		if (nextBet()) then
+			changeState("revealing")
+		end
 	elseif (gameState == "revealing") then
 		print("Revealing will end automatically")
 	elseif (gameState == "finish") then
-		changeState("preFlop")
+		-- changeState("preFlop")
+		print("Finish will end automatically")
 	else
 		print("Unknown state " .. gameState)
 	end
@@ -79,7 +121,11 @@ function newRound()
 
 	for i, player in ipairs(players) do
 		player.cards = {}
+		player.bettingChips = 0
 		player.flipped, player.folded = false, false
+		player.allIn, player.dealer = false, false
+		player.hasActed = false
+
 		if (player.quit or player.chips < 1) then
 			table.insert(toRemove, i)
 		else
@@ -93,24 +139,50 @@ function newRound()
 		table.remove(players, i)
 	end
 
+	table.insert(pots, createPot())
+
 	dealerPlayer = wrapPlayerIndex(dealerPlayer + 1)
+	players[dealerPlayer].dealer = true
 	onBet(players[wrapPlayerIndex(dealerPlayer + 1)], smallBlind)
 	onBet(players[wrapPlayerIndex(dealerPlayer + 2)], bigBlind)
+	activePlayer = wrapPlayerIndex(dealerPlayer + 3)
+end
+
+function createPot()
+	local pot = {chips = 0, drawChips = 0, bettingChips = 0, players = {}}
+	for _, player in ipairs(players) do
+		if (not player.allIn and not player.folded and not player.quit) then
+			table.insert(pot.players, player)
+		end
+	end
+	return pot
+end
+
+function endBettingRound()
+	for _, player in ipairs(players) do
+		pots[1].chips = pots[1].chips + (player.bettingChips or 0)
+		player.bettingChips = 0
+		player.hasActed = false
+	end
+	pots[1].bettingChips = 0
 end
 
 function flop()
+	endBettingRound()
 	for i = 1, 3 do
 		sharedCards[i] = table.remove(deck)
 	end
 end
 
 function turn()
+	endBettingRound()
 	for i = 4, 4 do
 		sharedCards[i] = table.remove(deck)
 	end
 end
 
 function river()
+	endBettingRound()
 	for i = 5, 5 do
 		sharedCards[i] = table.remove(deck)
 	end
@@ -118,8 +190,10 @@ end
 
 function revealNext()
 	timer = 0
+	activePlayer = nil
 	local found = false
-	for _, player in ipairs(players) do
+	for i = 1, #players do
+		local player = players[wrapPlayerIndex(dealerPlayer + i)]
 		if (not player.flipped and not player.quit and not player.folded) then
 			player.flipped = true
 			found = true
@@ -132,14 +206,79 @@ function revealNext()
 end
 
 function onBet(player, amount)
-	--TODO: handle all in on blind
+	amount = math.min(amount, player.chips)
 	player.chips = player.chips - amount
+	player.hasActed = true
+	player.bettingChips = player.bettingChips + amount
+	pots[1].bettingChips = math.max(pots[1].bettingChips, player.bettingChips)
+	if (player.chips < 1) then
+		player.allIn = true
+		player.flipped = true
+		table.insert(pots, 1, createPot())
+		print (string.format("Detected player all in, there are now %d pots", #pots))
+	end
 end
 
-function finishRound()
+function onFold(player)
+	player.folded = true
+	pots[1].chips = pots[1].chips + (player.bettingChips or 0)
+	player.bettingChips = 0
+	player.hasActed = false
+
+	return checkGameEnded()
+end
+
+function checkGameEnded()
+	local numActive = 0
+	local foundPlayer = nil
+	for _, player in ipairs(players) do
+		if (not player.folded and not player.quit) then
+			numActive = numActive + 1
+			foundPlayer = player
+		end
+	end
+	if (numActive < 2) then
+		endBettingRound()
+		for i = 1, #pots do
+			local pot = table.remove(pots)
+			foundPlayer.chips = foundPlayer.chips + pot.chips
+		end
+		timer = 0
+		changeState("finish")
+		return true
+	end
+	return false
+end
+
+function countPots()
+	local count = 0
+	for _, pot in ipairs(pots) do
+		if (pot.chips > 0) then
+			count = count + 1
+		end
+	end
+	return count
+end
+
+function splitPot(pot, winningPIs)
+	local sortPIs = function(pIA, pIB)
+		return wrapPlayerIndex(pIA - dealerPlayer) < wrapPlayerIndex(pIB - dealerPlayer)
+	end
+	table.sort(winningPIs, sortPIs)
+	local remainder = pot.chips % #winningPIs
+	for i = 1, remainder do
+		players[winningPIs[i]].chips = player[winningPIs[i]].chips + 1
+	end
+	pot.chips = pot.chips - remainder
+	for _, pI in ipairs(winningPIs) do
+		players[pI].chips = players[pI].chips + (pot.chips / #winningPIs)
+	end
+end
+
+function finishPot(pot)
 	local winningDescription, winningResult, winningMatchedCardsSet, winningPIs
 	isDraw = false
-	for pI, player in ipairs(players) do
+	for pI, player in ipairs(pot.players) do
 		if (not (player.quit or player.folded)) then
 			player.flipped = true
 			player.description = hands.describeHand(sharedCards, player.cards)
@@ -147,8 +286,12 @@ function finishRound()
 			player.matchedCardsSet = {}
 			print (string.format("%s%s %s%s", player.cards[1].number, player.cards[1].suit, player.cards[2].number, player.cards[2].suit))
 			print (pI, player.result.name, player.result.score)
+
 			for i, card in ipairs(player.result.matchedCards or {}) do
 				player.matchedCardsSet[card.number .. card.suit] = i <= player.result.primaryMatches
+			end
+			if (player.result.name == "Pair") then
+				print (textutils.serialize(player.matchedCardsSet))
 			end
 			if (winningResult == nil or winningResult.score < player.result.score) then
 				winningDescription = player.description
@@ -167,42 +310,121 @@ function finishRound()
 	end
 	print(table.concat(winningPIs, ", "))
 	print(string.format("Draw %s", tostring(isDraw)))
+
+	if (#winningPIs == 1) then
+		players[winningPIs[1]].chips = players[winningPIs[1]].chips + pot.chips
+	else
+		splitPot(pot, winningPIs)
+	end
+	pot.chips = 0
+
 	description = winningDescription
 	result = winningResult
 	matchedCardsSet = winningMatchedCardsSet
 end
 
+function finishRound()
+	totalPots = countPots()
+	finishNextPot()
+end
+
+function finishNextPot()
+	if (#pots > 0) then
+		timer = 0
+		for i = #pots, 1, -1 do
+			local pot = table.remove(pots)
+			if (pot.chips > 0) then
+				currentPot = i
+				print (string.format("Finishing pot %d/%d", i, totalPots))
+				os.sleep(1)
+				finishPot(pot)
+				break
+			end
+		end
+	elseif (timer > 100) then
+		timer = 0
+		changeState("preFlop")
+	end
+end
+
+function findModem()
+	for _, side in ipairs(peripheral.getNames()) do
+		if (peripheral.getType(side) == "modem") then
+			return side
+		end
+	end
+	error("Must have a modem attached to use this script")
+end
+
+function onPokerMessage(senderId, message)
+	if (message.action == "join") then
+		print(string.format("%s joined the game", senderId))
+		players[1].receiverId = senderId
+	else
+		print(string.format("Received unknown poker message: %s", textutils.serialize(message)))
+	end
+end
+
+local modemSide = findModem()
+rednet.open(modemSide)
+rednet.host(POKER_PROTOCOL, "pokerServer")
+
 changeState("preFlop")
-changeState("flop")
-changeState("turn")
-changeState("river")
+-- changeState("flop")
+-- changeState("turn")
+-- changeState("river")
 
-sharedCards[1] = {number="10", suit="H"}
-sharedCards[2] = {number="7", suit="C"}
-sharedCards[3] = {number="J", suit="H"}
-sharedCards[4] = {number="10", suit="D"}
-sharedCards[5] = {number="9", suit="D"}
+-- sharedCards[1] = {number="10", suit="H"}
+-- sharedCards[2] = {number="7", suit="C"}
+-- sharedCards[3] = {number="J", suit="H"}
+-- sharedCards[4] = {number="10", suit="D"}
+-- sharedCards[5] = {number="9", suit="D"}
 
-players[1].cards = {{number="5", suit="H"}, {number="Q", suit="D"}}
-players[2].cards = {{number="8", suit="H"}, {number="J", suit="C"}}
-players[3].cards = {{number="K", suit="C"}, {number="7", suit="S"}}
-players[4].cards = {{number="8", suit="S"}, {number="K", suit="H"}}
-players[5].cards = {{number="4", suit="S"}, {number="2", suit="H"}}
-players[6].cards = {{number="J", suit="S"}, {number="9", suit="H"}}
-players[7].cards = {{number="Q", suit="C"}, {number="4", suit="D"}}
-players[8].cards = {{number="A", suit="D"}, {number="A", suit="H"}}
+-- players[1].cards = {{number="5", suit="H"}, {number="Q", suit="D"}}
+-- players[2].cards = {{number="8", suit="H"}, {number="J", suit="C"}}
+-- players[3].cards = {{number="K", suit="C"}, {number="7", suit="S"}}
+-- players[4].cards = {{number="8", suit="S"}, {number="K", suit="H"}}
+-- players[5].cards = {{number="4", suit="S"}, {number="2", suit="H"}}
+-- players[6].cards = {{number="J", suit="S"}, {number="9", suit="H"}}
+-- players[7].cards = {{number="Q", suit="C"}, {number="4", suit="D"}}
+-- players[8].cards = {{number="A", suit="D"}, {number="A", suit="H"}}
 
-changeState("revealing")
-
+-- changeState("revealing")
+function lerpChips(chipOwner)
+	if (chipOwner.chips ~= chipOwner.drawChips) then
+		local diff = chipOwner.chips - chipOwner.drawChips
+		local delta = diff / 10
+		if (delta < 0) then
+			delta = math.floor(delta)
+		else
+			delta = math.ceil(delta)
+		end
+		-- print (string.format("Draw chips not equal, adding delta %d of diff %d", delta, diff))
+		chipOwner.drawChips = chipOwner.drawChips + delta
+	end
+end
 
 local frm = 1
 while (true) do
-	drawFrame(frm, sharedCards, players, activePlayer, result, matchedCardsSet)
+	drawFrame(frm, gameState, sharedCards, players, activePlayer, result, matchedCardsSet, isDraw, pots, currentPot, totalPots)
 	-- playerLocations[7].rot = playerLocations[7].rot + 0.1
+
+	for _, player in ipairs(players) do
+		lerpChips(player)
+	end
+
+	for _, pot in ipairs(pots) do
+		lerpChips(pot)
+	end
+
 	if (gameState == "revealing") then
 		if (timer > 20) then
 			print(timer)
 			revealNext()
+		end
+	elseif (gameState == "finish") then
+		if (timer > 20) then
+			finishNextPot()
 		end
 	end
 	os.startTimer(0.05)
@@ -212,6 +434,13 @@ while (true) do
 			break
 		elseif (result[1] == "monitor_touch") then
 			nextState()
+		elseif (result[1] == "rednet_message") then
+			local _, senderId, message, protocol = table.unpack(result)
+			if (protocol == POKER_PROTOCOL) then
+				onPokerMessage(senderId, message)
+			else
+				print(string.format("Received message on unknown protocol %s", protocol))
+			end
 		else
 			print (textutils.serialize(result))
 		end

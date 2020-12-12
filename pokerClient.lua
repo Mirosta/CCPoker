@@ -1,6 +1,11 @@
 local pokerRender = require("pokerRender")
-local player = {cards={{number="5", suit="H"}, {number="Q", suit="D"}}, chips = 1000}
+local POKER_PROTOCOL = "poker.protocol"
+local player = {name="Tom", cards={{number="5", suit="H"}, {number="Q", suit="D"}}, chips = 1000}
 local frm = 1
+assert(peripheral.getType("back") == "modem", "Personal computer must have a modem attached!")
+rednet.open("back")
+rednet.host(POKER_PROTOCOL, "pokerClient")
+local serverReceiverId = nil
 
 function drawString(to, str, maxLength, pos, backColor, textColor)
 	for i = 1, math.min(string.len(str), maxLength) do
@@ -17,10 +22,12 @@ local isActive = true
 --  -> fold
 --  -> bet
 
-local uiState = "viewCards"
+local uiState = "lobby"
+-- Connecting -> Waiting to Start
+local lobbyStatus = "Connecting"
 
 local buttons = {}
-local buttonVisibilityGroups = {viewCards = {}, exit = {}, raise = {}, call = {}, fold = {}}
+local buttonVisibilityGroups = {lobby = {}, viewCards = {}, exit = {}, raise = {}, call = {}, fold = {}}
 
 function createButton(text, x, y, width, height, backColors, textColors, align)
 	local innerX = x + 1
@@ -126,6 +133,20 @@ function onQuit()
 	
 end
 
+function sendJoinMessage()
+	rednet.send(serverReceiverId, {action="join", player=player}, POKER_PROTOCOL)
+	lobbyStatus = "Waiting to Start"
+end
+
+function onPokerMessage(senderId, message)
+	if (message.action == "start") then
+		print("Game starting")
+		changeState("viewCards")
+	else
+		print(string.format("Received unknown poker message: %s", textutils.serialize(message)))
+	end
+end
+
 function drawButton(to, button, isActive)
 	if (not button.visible) then
 		return
@@ -172,7 +193,7 @@ table.insert(buttonVisibilityGroups.fold, buttons[10])
 table.insert(buttonVisibilityGroups.fold, buttons[11])
 table.insert(buttonVisibilityGroups.fold, buttons[12])
 
-changeVisibilityGroup("viewCards")
+changeVisibilityGroup("lobby")
 
 buttons[2].onClick = function()
 	if (uiState == "viewCards") then
@@ -224,7 +245,12 @@ end
 
 while (true) do
 	pokerRender.screen:clear(colors.green)
-	drawSharedCards(pokerRender.screen, vector.new(pokerRender.screen.width / 2 + 1, pokerRender.screen.height / 2 + 2), player.cards, nil, 2)
+	if (uiState ~= "lobby") then
+		drawSharedCards(pokerRender.screen, vector.new(pokerRender.screen.width / 2 + 1, pokerRender.screen.height / 2 + 2), player.cards, nil, 2)
+	else
+		local statusStr = lobbyStatus .. "..."
+		drawString(pokerRender.screen, statusStr, string.len(lobbyStatus) + math.floor((frm % 20) / 5), vector.new(3, pokerRender.screen.height / 2), colors.green, colors.white)
+	end
 	local chipStr = string.format("$%d", player.chips)
 	buttons[1].text = chipStr
 	local raiseChips = (tonumber(raiseAmount) or 0) + currentBet
@@ -279,13 +305,20 @@ while (true) do
 
 	pokerRender.screen:output(pokerRender.monitor)
 
+	if (uiState == "lobby") then
+		if (serverReceiverId == nil) then
+			serverReceiverId = rednet.lookup(POKER_PROTOCOL, "pokerServer")
+			if (serverReceiverId ~= nil) then
+				sendJoinMessage()
+			end
+		end
+	end
 	os.startTimer(0.05)
 	while (true) do
 		local result = table.pack(os.pullEvent())
 		local eventName = table.remove(result, 1)
 		if (eventName == "timer") then
 			break
-		elseif (eventName == "monitor_touch") then
 		elseif (eventName == "mouse_click") then
 			local mouseButton, x, y = table.unpack(result)
 			for _, button in ipairs(buttons) do
@@ -308,6 +341,13 @@ while (true) do
 			local keyCode = result[1]
 			if (uiState == "bet" and raiseable and keyCode == keys.backspace and string.len(raiseAmount) > 0) then
 				raiseAmount = string.sub(raiseAmount, 1, #raiseAmount - 1) .. ""
+			end
+		elseif (eventName == "rednet_message") then
+			senderId, message, protocol = table.unpack(result)
+			if (protocol == POKER_PROTOCOL) then
+				onPokerMessage(senderId, message)
+			else
+				print(string.format("Received message on unknown protocol %s", protocol))
 			end
 		else
 			--print (textutils.serialize(result))
