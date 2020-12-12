@@ -5,16 +5,16 @@ end
 local width, height = monitor.getSize()
 local surface = dofile('surface')
 local screen = surface.create(width, height, colors.green)
-local tenImg = surface.load("ten.nfp")
-local arrowImg = surface.load("arrow.nfp")
-local chipImg = surface.load("chip.nfp")
-local dealerImg = surface.load("dealer.nfp")
-local font = surface.loadFont(surface.load("font.bmp"))
+local tenImg = surface.load(shell.dir() .. "/ten.nfp")
+local arrowImg = surface.load(shell.dir() .. "/arrow.nfp")
+local chipImg = surface.load(shell.dir() .. "/chip.nfp")
+local dealerImg = surface.load(shell.dir() .. "/dealer.nfp")
+local font = surface.loadFont(surface.load(shell.dir() .. "/font.bmp"))
 local suitImages = {
-	H = surface.load("heart.nfp"),
-	D = surface.load("diamond.nfp"),
-	C = surface.load("club.nfp"),
-	S = surface.load("spade.nfp"),
+	H = surface.load(shell.dir() .. "/heart.nfp"),
+	D = surface.load(shell.dir() .. "/diamond.nfp"),
+	C = surface.load(shell.dir() .. "/club.nfp"),
+	S = surface.load(shell.dir() .. "/spade.nfp"),
 }
 local numberSizes = {}
 
@@ -144,7 +144,7 @@ function drawSurfaceRotatedRightAngle(to, surf, x, y, rotIndex, offset)
 	end
 end
 
-local cardBackImg = loadImage("card_back_l.nfp")
+local cardBackImg = loadImage(shell.dir() .. "/card_back_l.nfp")
 local playerCardBuffer = surface.create(cardBackImg.width, cardBackImg.height)
 local chipBuffer = surface.create(chipImg.width, chipImg.height)
 
