@@ -31,7 +31,7 @@ local addActionHandler = function(action, handler)
 	assert(action ~= nil, "Action must not be nil")
 	assert(action ~= ACK_ACTION, "Action must not be ack")
 	assert(handler ~= nil, "Handler must not be nil")
-	
+
 	actionHandlers[action] = handler
 end
 
@@ -85,6 +85,7 @@ local onTick = function()
 end
 
 return {
+	POKER_PROTOCOL = POKER_PROTOCOL,
 	onPokerMessage = onPokerMessage,
 	sendMessage = sendMessage,
 	addActionHandler = addActionHandler,
