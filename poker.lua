@@ -1,9 +1,15 @@
 require("pokerRender")
-local POKER_PROTOCOL = "poker.protocol"
+local pokerProtocol = require("pokerProtocol")
 local hands = require('hands')
 
 local bigBlind = 4
 local smallBlind = 2
+
+io.output("/poker.log")
+function print(text)
+    io.write(text)
+    io.flush()
+end
 
 local players = {
 	{name = "Tom", location=1, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=2, drawChips=2, bettingChips=0},
@@ -356,14 +362,12 @@ function findModem()
 	error("Must have a modem attached to use this script")
 end
 
-function onPokerMessage(senderId, message)
-	if (message.action == "join") then
-		print(string.format("%s joined the game", senderId))
-		players[1].receiverId = senderId
-	else
-		print(string.format("Received unknown poker message: %s", textutils.serialize(message)))
-	end
+function onPlayerJoined(senderId, message)
+	print(string.format("%s joined the game: %s", senderId, textutils.serialize(message)))
+	players[1].receiverId = senderId
 end
+
+pokerProtocol.addActionHandler("join", onPlayerJoined)
 
 local modemSide = findModem()
 rednet.open(modemSide)
@@ -431,13 +435,14 @@ while (true) do
 	while (true) do
 		local result = table.pack(os.pullEvent())
 		if (result[1] == "timer") then
+			pokerProtocol.onTick()
 			break
 		elseif (result[1] == "monitor_touch") then
 			nextState()
 		elseif (result[1] == "rednet_message") then
 			local _, senderId, message, protocol = table.unpack(result)
 			if (protocol == POKER_PROTOCOL) then
-				onPokerMessage(senderId, message)
+				pokerProtocol.onPokerMessage(senderId, message)
 			else
 				print(string.format("Received message on unknown protocol %s", protocol))
 			end

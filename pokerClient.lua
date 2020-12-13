@@ -1,5 +1,5 @@
 local pokerRender = require("pokerRender")
-local POKER_PROTOCOL = "poker.protocol"
+local pokerProtocol = require("pokerProtocol")
 local player = {name="Tom", cards={{number="5", suit="H"}, {number="Q", suit="D"}}, chips = 1000}
 local frm = 1
 assert(peripheral.getType("back") == "modem", "Personal computer must have a modem attached!")
@@ -7,7 +7,7 @@ rednet.open("back")
 rednet.host(POKER_PROTOCOL, "pokerClient")
 local serverReceiverId = nil
 
-io.open("pokerClient.log")
+io.output("/pokerClient.log")
 function print(text)
         io.write(text)
         io.flush()
@@ -140,19 +140,28 @@ function onQuit()
 	
 end
 
-function sendJoinMessage()
-	rednet.send(serverReceiverId, {action="join", player=player}, POKER_PROTOCOL)
+function onJoined(senderId, message)
+	print ("Game starting")
+	print (textutils.serialize(message))
 	lobbyStatus = "Waiting to Start"
 end
 
-function onPokerMessage(senderId, message)
-	if (message.action == "start") then
-		print("Game starting")
-		changeState("viewCards")
-	else
-		print(string.format("Received unknown poker message: %s", textutils.serialize(message)))
-	end
+function onJoinError(error)
+	assert(error == "Timed out", "Unknown network error: " .. error)
+	print ("Failed to join after timeout, retrying...")
+	sendJoinMessage()
 end
+
+local function sendJoinMessage()
+	pokerProtocol.sendMessage(serverReceiverId, {action="join", player=player}, onJoined)
+end
+
+function onGameStarted()
+	print("Game starting")
+	changeState("viewCards")
+end
+
+pokerProtocol.addActionHandler("start", onGameStarted)
 
 function drawButton(to, button, isActive)
 	if (not button.visible) then
@@ -316,6 +325,7 @@ while (true) do
 		if (serverReceiverId == nil) then
 			serverReceiverId = rednet.lookup(POKER_PROTOCOL, "pokerServer")
 			if (serverReceiverId ~= nil) then
+				print(string.format("Got server receiver id of %d", serverReceiverId))
 				sendJoinMessage()
 			end
 		end
@@ -325,6 +335,7 @@ while (true) do
 		local result = table.pack(os.pullEvent())
 		local eventName = table.remove(result, 1)
 		if (eventName == "timer") then
+			pokerProtocol.onTick()
 			break
 		elseif (eventName == "mouse_click") then
 			local mouseButton, x, y = table.unpack(result)
@@ -352,7 +363,7 @@ while (true) do
 		elseif (eventName == "rednet_message") then
 			senderId, message, protocol = table.unpack(result)
 			if (protocol == POKER_PROTOCOL) then
-				onPokerMessage(senderId, message)
+				pokerProtocol.onPokerMessage(senderId, message)
 			else
 				print(string.format("Received message on unknown protocol %s", protocol))
 			end
