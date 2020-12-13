@@ -37,7 +37,7 @@ end
 
 local ack = function(senderId, message)
 	if (message.messageId == nil) then
-		print(string.format("WARNING: Received message from %d with no messageId: %s", receiverId, textutils.serialize(message)))
+		print(string.format("WARNING: Received message from %d with no messageId: %s", senderId, textutils.serialize(message)))
 		return
 	end
 	rednet.send(senderId, {action=ACK_ACTION, messageId = message.messageId}, POKER_PROTOCOL)
@@ -50,12 +50,12 @@ local onPokerMessage = function(senderId, message)
 	end
 	if (message.action == ACK_ACTION) then
 		if (not message.messageId) then
-			print(string.format("WARNING: Received ack from %d with no messageId: %s", receiverId, textutils.serialize(message)))
+			print(string.format("WARNING: Received ack from %d with no messageId: %s", senderId, textutils.serialize(message)))
 			return
 		end
 		local callback = callbacks[message.messageId]
 		if (not callback) then
-			print(string.format("WARNING: Received ack from %d with no matching callback %d", receiverId, message.messageId))
+			print(string.format("WARNING: Received ack from %d with no matching callback %d", senderId, message.messageId))
 			return
 		end
 		if (callback.onAck) then
