@@ -20,7 +20,7 @@ local sendMessage = function(receiverId, message, onAck, onError, timeout)
 	message.messageId = messageId
 	messageId = messageId + 1 % 65536
 	rednet.send(receiverId, message, POKER_PROTOCOL)
-	callbacks[messageId] = {
+	callbacks[message.messageId] = {
 		onAck = onAck,
 		onError = onError,
 		expiry = tick + timeout
