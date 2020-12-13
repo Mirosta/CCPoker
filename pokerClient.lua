@@ -7,6 +7,13 @@ rednet.open("back")
 rednet.host(POKER_PROTOCOL, "pokerClient")
 local serverReceiverId = nil
 
+io.open()
+function print(text)
+        io.write(text)
+        io.flush()
+end
+
+
 function drawString(to, str, maxLength, pos, backColor, textColor)
 	for i = 1, math.min(string.len(str), maxLength) do
 		to:drawPixel(math.floor(pos.x) + i - 1, math.floor(pos.y), backColor, textColor, string.sub(str, i, i) .. "")
