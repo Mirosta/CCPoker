@@ -7,7 +7,7 @@ rednet.open("back")
 rednet.host(POKER_PROTOCOL, "pokerClient")
 local serverReceiverId = nil
 
-io.open()
+io.open("pokerClient.log")
 function print(text)
         io.write(text)
         io.flush()
