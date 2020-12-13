@@ -371,7 +371,7 @@ pokerProtocol.addActionHandler("join", onPlayerJoined)
 
 local modemSide = findModem()
 rednet.open(modemSide)
-rednet.host(POKER_PROTOCOL, "pokerServer")
+rednet.host(pokerProtocol.POKER_PROTOCOL, "pokerServer")
 
 changeState("preFlop")
 -- changeState("flop")
@@ -441,13 +441,13 @@ while (true) do
 			nextState()
 		elseif (result[1] == "rednet_message") then
 			local _, senderId, message, protocol = table.unpack(result)
-			if (protocol == POKER_PROTOCOL) then
+			if (protocol == pokerProtocol.POKER_PROTOCOL) then
 				pokerProtocol.onPokerMessage(senderId, message)
 			else
 				print(string.format("Received message on unknown protocol %s", protocol))
 			end
 		else
-			print (textutils.serialize(result))
+			print(textutils.serialize(result))
 		end
 	end
 	-- description = hands.describeHand(sharedCards, {})

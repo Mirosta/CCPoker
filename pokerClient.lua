@@ -4,7 +4,7 @@ local player = {name="Tom", cards={{number="5", suit="H"}, {number="Q", suit="D"
 local frm = 1
 assert(peripheral.getType("back") == "modem", "Personal computer must have a modem attached!")
 rednet.open("back")
-rednet.host(POKER_PROTOCOL, "pokerClient")
+rednet.host(pokerProtocol.POKER_PROTOCOL, "pokerClient")
 local serverReceiverId = nil
 
 io.output("/pokerClient.log")
@@ -323,7 +323,7 @@ while (true) do
 
 	if (uiState == "lobby") then
 		if (serverReceiverId == nil) then
-			serverReceiverId = rednet.lookup(POKER_PROTOCOL, "pokerServer")
+			serverReceiverId = rednet.lookup(pokerProtocol.POKER_PROTOCOL, "pokerServer")
 			if (serverReceiverId ~= nil) then
 				print(string.format("Got server receiver id of %d", serverReceiverId))
 				sendJoinMessage()
@@ -362,7 +362,7 @@ while (true) do
 			end
 		elseif (eventName == "rednet_message") then
 			senderId, message, protocol = table.unpack(result)
-			if (protocol == POKER_PROTOCOL) then
+			if (protocol == pokerProtocol.POKER_PROTOCOL) then
 				pokerProtocol.onPokerMessage(senderId, message)
 			else
 				print(string.format("Received message on unknown protocol %s", protocol))
