@@ -364,7 +364,7 @@ while (true) do
 			senderId, message, protocol = table.unpack(result)
 			if (protocol == pokerProtocol.POKER_PROTOCOL) then
 				pokerProtocol.onPokerMessage(senderId, message)
-			else
+			elseif (protocol ~= nil) then
 				print(string.format("Received message on unknown protocol %s", protocol))
 			end
 		else

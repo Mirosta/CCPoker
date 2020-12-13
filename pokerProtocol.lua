@@ -40,7 +40,7 @@ local ack = function(senderId, message)
 		print(string.format("WARNING: Received message from %d with no messageId: %s", receiverId, textutils.serialize(message)))
 		return
 	end
-	rednet.send(senderId, {action=ACK_ACTION, messageId = message.messageId})
+	rednet.send(senderId, {action=ACK_ACTION, messageId = message.messageId}, POKER_PROTOCOL)
 end
 
 local onPokerMessage = function(senderId, message)
