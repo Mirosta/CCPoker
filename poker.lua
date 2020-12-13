@@ -7,7 +7,7 @@ local smallBlind = 2
 
 io.output("/poker.log")
 function print(text)
-    io.write(text)
+    io.write(text .. "\n")
     io.flush()
 end
 

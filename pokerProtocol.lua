@@ -8,7 +8,7 @@ local tick = 0
 local messageId = 0
 
 local function print(text)
-    io.write(text)
+    io.write(text .. "\n")
     io.flush()
 end
 

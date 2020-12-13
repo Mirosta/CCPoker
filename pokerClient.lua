@@ -9,8 +9,8 @@ local serverReceiverId = nil
 
 io.output("/pokerClient.log")
 function print(text)
-        io.write(text)
-        io.flush()
+	io.write(text .. "\n")
+    io.flush()
 end
 
 
