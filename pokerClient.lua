@@ -295,7 +295,11 @@ end
 while (true) do
 	pokerRender.screen:clear(colors.green)
 	if (uiState ~= "lobby") then
-		drawSharedCards(pokerRender.screen, vector.new(pokerRender.screen.width / 2 + 1, pokerRender.screen.height / 2 + 2), player.cards, nil, 2)
+		if (player.folded) then
+			drawString(pokerRender.screen, "You Folded", 10, vector.new(poker.screen.width / 2 - 5, poker.screen.height / 2), colors.gray, colors.white)
+		else
+			drawSharedCards(pokerRender.screen, vector.new(pokerRender.screen.width / 2 + 1, pokerRender.screen.height / 2 + 2), player.cards, nil, 2)
+		end
 	else
 		local statusStr = lobbyStatus .. "..."
 		drawString(pokerRender.screen, statusStr, string.len(lobbyStatus) + math.floor((frm % 20) / 5), vector.new(3, pokerRender.screen.height / 2), colors.green, colors.white)
