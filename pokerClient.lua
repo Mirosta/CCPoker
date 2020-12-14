@@ -1,6 +1,6 @@
 local pokerRender = require("pokerRender")
 local pokerProtocol = require("pokerProtocol")
-local player = {name="Tom", cards={{number="5", suit="H"}, {number="Q", suit="D"}}, chips = 20, bettingChips=0}
+local player = {name="Tom", cards={{number="5", suit="H"}, {number="Q", suit="D"}}, chips = 0, bettingChips=0, drawChips=0}
 local frm = 1
 assert(peripheral.getType("back") == "modem", "Personal computer must have a modem attached!")
 rednet.open("back")
@@ -180,7 +180,9 @@ function onPlayerStateChanged(senderId, message)
 		return
 	end
 	for k, v in pairs(message.state) do
-		player[k] = v
+		if (k ~= "drawChips") then
+			player[k] = v
+		end
 	end
 end
 
@@ -298,7 +300,7 @@ while (true) do
 		local statusStr = lobbyStatus .. "..."
 		drawString(pokerRender.screen, statusStr, string.len(lobbyStatus) + math.floor((frm % 20) / 5), vector.new(3, pokerRender.screen.height / 2), colors.green, colors.white)
 	end
-	local chipStr = string.format("$%d", player.chips)
+	local chipStr = string.format("$%d", player.drawChips)
 	buttons[1].text = chipStr
 	local raiseChips = (tonumber(raiseAmount) or 0) + currentBet
 	if (raiseChips >= player.chips) then
@@ -353,7 +355,9 @@ while (true) do
 	end
 
 	pokerRender.screen:output(pokerRender.monitor)
-
+	if (buttons[1].visible) then
+		lerpChips(player)
+	end
 	if (uiState == "lobby") then
 		if (serverReceiverId == nil) then
 			serverReceiverId = rednet.lookup(pokerProtocol.POKER_PROTOCOL, "pokerServer")

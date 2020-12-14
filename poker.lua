@@ -459,19 +459,6 @@ changeState("preFlop")
 -- players[8].cards = {{number="A", suit="D"}, {number="A", suit="H"}}
 
 -- changeState("revealing")
-function lerpChips(chipOwner)
-	if (chipOwner.chips ~= chipOwner.drawChips) then
-		local diff = chipOwner.chips - chipOwner.drawChips
-		local delta = diff / 10
-		if (delta < 0) then
-			delta = math.floor(delta)
-		else
-			delta = math.ceil(delta)
-		end
-		-- print (string.format("Draw chips not equal, adding delta %d of diff %d", delta, diff))
-		chipOwner.drawChips = chipOwner.drawChips + delta
-	end
-end
 
 local frm = 1
 while (true) do
