@@ -29,6 +29,18 @@ function loadPlayerState()
 	return player
 end
 
+function savePlayerState()
+	local f = io.open("/player.conf", "w")
+	if (f == nil) then
+		print("WARNING: Unable to find state file /player.conf")
+		return false
+	end
+	f:write(textutils.serialize({name = player.name, chips = player.chips, locationId = player.locationId}))
+	f:flush()
+	f:close()
+	return true
+end
+
 local player = loadPlayerState()
 player.drawChips = player.chips
 player.cards = {}
@@ -152,6 +164,7 @@ function onBet(totalRaised)
 	local amountBet = math.min(player.chips, totalRaised + currentBet)
 	player.chips = player.chips - amountBet
 	player.bettingChips = player.bettingChips + amountBet
+	savePlayerState()
 	sendBetMessage(amountBet)
 	isActive = false
 	changeState("viewCards")
@@ -206,6 +219,7 @@ function onPlayerStateChanged(senderId, message)
 			player[k] = v
 		end
 	end
+	savePlayerState()
 end
 
 function onIsActivePlayer(senderId, message)
