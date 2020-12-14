@@ -1,6 +1,6 @@
 local PLINTH_PROTOCOL = "plinth.protocol"
 local MAX_SLOTS = 16
-local suckFromPlinthSide = "up"
+local suckFromPlinthSide = "top"
 local suckToPlinthSide = "right"
 local locationId
 
