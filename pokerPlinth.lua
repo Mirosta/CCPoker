@@ -97,7 +97,7 @@ function tryMountItem(item, itemType)
 		sleep(0.05)
 		attempts = attempts + 1
 	end
-	if (attempts >= 10 or not disk.dropDown()) then
+	if (attempts >= 10 or not turtle.dropDown()) then
 		print (string.format("WARNING: Failed to insert %s, will retry", itemType))
 		return false
 	end
