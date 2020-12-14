@@ -30,6 +30,10 @@ function loadPlayerState()
 end
 
 local player = loadPlayerState()
+player.drawChips = player.chips
+player.cards = {}
+player.bettingChips = 0
+
 assert(player ~= nil, "Unable to load player state")
 
 function drawString(to, str, maxLength, pos, backColor, textColor)
