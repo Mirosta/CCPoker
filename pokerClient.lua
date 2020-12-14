@@ -156,15 +156,15 @@ function onJoinError(error)
 	sendJoinMessage()
 end
 
-local function sendJoinMessage()
+function sendJoinMessage()
 	pokerProtocol.sendMessage(serverReceiverId, {action="join", player=player}, onJoined)
 end
 
-local function sendFoldMessage()
+function sendFoldMessage()
 	pokerProtocol.sendMessage(serverReceiverId, {action="fold"})
 end
 
-local function sendBetMessage(betAmount)
+function sendBetMessage(betAmount)
 	pokerProtocol.sendMessage(serverReceiverId, {action="bet", betAmount=betAmount})
 end
 

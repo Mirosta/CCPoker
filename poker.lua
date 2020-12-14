@@ -410,6 +410,7 @@ function onPlayerBet(senderId, message)
 	end
 	local actualAmount = onBet(player, message.betAmount)
 	sendPlayerStateMessage(player)
+	updateActivePlayer()
 end
 
 function onPlayerFold(senderId, message)
@@ -419,6 +420,7 @@ function onPlayerFold(senderId, message)
 		return
 	end
 	onFold(player)
+	updateActivePlayer()
 end
 
 pokerProtocol.addActionHandler("join", onPlayerJoined)
