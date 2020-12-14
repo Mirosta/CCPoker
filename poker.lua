@@ -395,6 +395,7 @@ function onPlayerJoined(senderId, message)
 	players[1].receiverId = senderId
 	playersByReceiverId[senderId] = players[1]
 	sendStartGameMessage(players[1])
+	sendPlayerStateMessage(players[1])
 end
 
 function onPlayerBet(senderId, message)
