@@ -5,10 +5,12 @@ local hands = require('hands')
 local bigBlind = 4
 local smallBlind = 2
 
---io.output("/poker.log")
+io.output("/poker.log")
 function print(text)
     io.write(text .. "\n")
+    io.stdout:write(text .. "\n")
     io.flush()
+    io.stdout:flush()
 end
 
 local players = {
@@ -492,6 +494,8 @@ while (true) do
 			break
 		elseif (result[1] == "monitor_touch") then
 			nextState()
+		elseif (eventName == "modem_message") then
+			print ("Ignoring modem message")
 		elseif (result[1] == "rednet_message") then
 			local _, senderId, message, protocol = table.unpack(result)
 			if (protocol == pokerProtocol.POKER_PROTOCOL) then

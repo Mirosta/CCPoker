@@ -358,6 +358,8 @@ while (true) do
 		if (eventName == "timer") then
 			pokerProtocol.onTick()
 			break
+		elseif (eventName == "modem_message") then
+			print ("Ignoring modem message")
 		elseif (eventName == "mouse_click") then
 			local mouseButton, x, y = table.unpack(result)
 			for _, button in ipairs(buttons) do
