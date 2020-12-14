@@ -436,7 +436,7 @@ function onPlayerFold(senderId, message)
 end
 
 function onPlinthMessage(senderId, message)
-	print("Received plinth message %s: %s", senderId, textutils.serialize(message))
+	print(string.format("Received plinth message %s: %s", senderId, textutils.serialize(message)))
 end
 
 pokerProtocol.addActionHandler("join", onPlayerJoined)
