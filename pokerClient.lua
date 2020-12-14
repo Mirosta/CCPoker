@@ -29,6 +29,13 @@ function loadPlayerState()
 	return player
 end
 
+local player = loadPlayerState()
+player.drawChips = player.chips
+player.cards = {}
+player.bettingChips = 0
+
+assert(player ~= nil, "Unable to load player state")
+
 function savePlayerState()
 	local f = io.open("/player.conf", "w")
 	if (f == nil) then
@@ -40,13 +47,6 @@ function savePlayerState()
 	f:close()
 	return true
 end
-
-local player = loadPlayerState()
-player.drawChips = player.chips
-player.cards = {}
-player.bettingChips = 0
-
-assert(player ~= nil, "Unable to load player state")
 
 function drawString(to, str, maxLength, pos, backColor, textColor)
 	for i = 1, math.min(string.len(str), maxLength) do
