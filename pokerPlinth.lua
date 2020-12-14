@@ -2,7 +2,6 @@ local PLINTH_PROTOCOL = "plinth.protocol"
 local MAX_SLOTS = 16
 local suckFromPlinthSide = "up"
 local suckToPlinthSide = "right"
-local validItems = {}
 local locationId
 
 function findModem()
@@ -142,7 +141,7 @@ assert(peripheral.getType("bottom") == "drive", "Must have a drive attached belo
 local modemSide = findModem()
 local serverReceiverId
 local playerName
--- waitingForServer -> waitingForDisk -> waitingForPlayer -> waitingForQuit -> waitForComputer -> goto waitingForDisk
+-- waitingForServer -> waitingForDisk -> waitingForPlayer -> waitingForQuit -> waitingForComputer -> goto waitingForDisk
 local mode = "waitingForServer"
 
 rednet.open(modemSide)
@@ -226,7 +225,7 @@ while true do
 			print("Timed out waiting for server reply, will retry")
 			sleepTime = 0.5
 		end
-	elseif (mode == "waitForComputer") then
+	elseif (mode == "waitingForComputer") then
 		local computerItem = findComputer()
 		if (computerItem ~= nil) then
 			print("Got computer back, will return current disk and wait for a new one")
