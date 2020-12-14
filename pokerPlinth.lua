@@ -92,7 +92,7 @@ end
 function tryMountItem(item, itemType)
 	turtle.select(item.slot)
 	local attempts = 0
-	while (disk.suckDown() and attempts < 10) do
+	while (turtle.suckDown() and attempts < 10) do
 		print ("Found item in disk drive, removing")
 		sleep(0.05)
 		attempts = attempts + 1
@@ -103,7 +103,7 @@ function tryMountItem(item, itemType)
 	end
 	if (not fs.exists("/disk")) then
 		print (string.format("The %s is not readable, will retry", itemType))
-		disk.suckDown()
+		turtle.suckDown()
 		return false
 	end
 	return true
@@ -115,7 +115,7 @@ function processDisk(diskItem)
 	end
 
 	local state = readDiskState()
-	disk.suckDown()
+	turtle.suckDown()
 	if (not state) then
 		return nil
 	end
@@ -132,7 +132,7 @@ function setupComputer(computerItem, diskData)
 	
 	diskData.locationId = locationId
 	local success = writeDiskState(diskData)
-	disk.suckDown()
+	turtle.suckDown()
 	return success
 end
 
