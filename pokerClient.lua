@@ -243,8 +243,8 @@ table.insert(buttonVisibilityGroups.fold, buttons[12])
 changeVisibilityGroup("lobby")
 
 buttons[2].onClick = function()
-	if (uiState == "viewCards") then
-		isActive = not isActive
+	if (uiState == "viewCards" and currentBet < 1) then
+		onBet(0)
 	end	
 end
 
