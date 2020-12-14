@@ -392,10 +392,14 @@ end
 
 function onPlayerJoined(senderId, message)
 	print(string.format("%s joined the game: %s", senderId, textutils.serialize(message)))
-	players[1].receiverId = senderId
-	playersByReceiverId[senderId] = players[1]
-	sendStartGameMessage(players[1])
-	sendPlayerStateMessage(players[1])
+	local playerIndex = 1 -- TODO: Decide index correctly
+	players[playerIndex].receiverId = senderId
+	playersByReceiverId[senderId] = players[playerIndex]
+	sendStartGameMessage(players[playerIndex])
+	sendPlayerStateMessage(players[playerIndex])
+	if (activePlayer == playerIndex) then
+		sendActivePlayerMessage(players[playerIndex])
+	end
 end
 
 function onPlayerBet(senderId, message)
