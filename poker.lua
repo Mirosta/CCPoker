@@ -16,7 +16,7 @@ end
 local players = {
 	{name = "Tom", location=1, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=2, drawChips=2, bettingChips=0},
 	{name = "Tom", location=3, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=220, drawChips=220, bettingChips=0, dealer=true},
-	{name = "Tom", location=5, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=333, drawChips=333, bettingChips=0, receiverId=1},
+	{name = "Tom", location=5, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=333, drawChips=333, bettingChips=0},
 	{name = "Tom", location=7, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=4444, drawChips=4444, bettingChips=0},
 	{name = "Tom", location=6, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=500, drawChips=500, bettingChips=0},
 	{name = "Tom", location=4, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=660, drawChips=660, bettingChips=0},
