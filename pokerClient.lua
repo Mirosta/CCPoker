@@ -1,6 +1,5 @@
 local pokerRender = require("pokerRender")
 local pokerProtocol = require("pokerProtocol")
-local player = {name="Tom", cards={{number="5", suit="H"}, {number="Q", suit="D"}}, chips = 0, bettingChips=0, drawChips=0}
 local frm = 1
 assert(peripheral.getType("back") == "modem", "Personal computer must have a modem attached!")
 rednet.open("back")
@@ -13,6 +12,25 @@ function print(text)
     io.flush()
 end
 
+function loadPlayerState()
+	--{name="Tom", cards={{number="5", suit="H"}, {number="Q", suit="D"}}, chips = 0, bettingChips=0, drawChips=0}
+	-- local state = {owner=owner, repoName=repoName, branchName=branchName, commitId=commitId}
+	-- local f = io.open(string.format("%s/.checkout", repoName), "w")
+	-- f:write(textutils.serialize(state))
+	-- f:flush()
+	-- f:close()
+	local f = io.open("/player.conf")
+	if (f == nil) then
+		print("WARNING: Unable to find state file /player.conf")
+		return nil
+	end
+	local player = textutils.unserialize(f:read("*a") or "")
+	f:close()
+	return player
+end
+
+local player = loadPlayerState()
+assert(player ~= nil, "Unable to load player state")
 
 function drawString(to, str, maxLength, pos, backColor, textColor)
 	for i = 1, math.min(string.len(str), maxLength) do

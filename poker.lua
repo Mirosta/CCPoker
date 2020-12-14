@@ -1,4 +1,5 @@
 require("pokerRender")
+local PLINTH_PROTOCOL = "plinth.protocol"
 local pokerProtocol = require("pokerProtocol")
 local hands = require('hands')
 
@@ -369,13 +370,16 @@ function finishNextPot()
 	end
 end
 
-function findModem()
+function findModem(wireless)
 	for _, side in ipairs(peripheral.getNames()) do
 		if (peripheral.getType(side) == "modem") then
-			return side
+			local modem = peripheral.wrap(side)
+			if (modem.isWireless() == wireless) then
+				return side
+			end
 		end
 	end
-	error("Must have a modem attached to use this script")
+	error(string.format("Must have a %s modem attached to use this script", wireless and "wireless" or "wired"))
 end
 
 function sendStartGameMessage(player)
@@ -430,13 +434,21 @@ function onPlayerFold(senderId, message)
 	nextState()
 end
 
+function onPlinthMessage(senderId, message)
+	print("Received plinth message %s: %s", senderId, textutils.serialize(message))
+end
+
 pokerProtocol.addActionHandler("join", onPlayerJoined)
 pokerProtocol.addActionHandler("bet", onPlayerBet)
 pokerProtocol.addActionHandler("fold", onPlayerFold)
 
-local modemSide = findModem()
-rednet.open(modemSide)
+local wirelessModemSide = findModem(true)
+local wiredModelSide = findModem(false)
+
+rednet.open(wirelessModemSide)
+rednet.open(wiredModelSide)
 rednet.host(pokerProtocol.POKER_PROTOCOL, "pokerServer")
+rednet.host(PLINTH_PROTOCOL, "pokerServer")
 
 changeState("preFlop")
 -- changeState("flop")
@@ -497,6 +509,8 @@ while (true) do
 			local _, senderId, message, protocol = table.unpack(result)
 			if (protocol == pokerProtocol.POKER_PROTOCOL) then
 				pokerProtocol.onPokerMessage(senderId, message)
+			elseif (protocol == PLINTH_PROTOCOL) then
+				onPlinthMessage(senderId, message)
 			else
 				print(string.format("Received message on unknown protocol %s", protocol))
 			end
