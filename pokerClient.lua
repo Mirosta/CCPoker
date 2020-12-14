@@ -326,7 +326,7 @@ while (true) do
 				active = false
 			end
 		elseif (i == 5) then
-			active = frm % 10 < 5
+			active = frm % 20 < 10
 		elseif (i == 7) then
 			--active = string.len(raiseAmount) > 0
 			if (raiseChips >= player.chips) then
