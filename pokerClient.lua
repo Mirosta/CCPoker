@@ -1,6 +1,6 @@
 local pokerRender = require("pokerRender")
 local pokerProtocol = require("pokerProtocol")
-local player = {name="Tom", cards={{number="5", suit="H"}, {number="Q", suit="D"}}, chips = 20, bettingChips=10}
+local player = {name="Tom", cards={{number="5", suit="H"}, {number="Q", suit="D"}}, chips = 20, bettingChips=0}
 local frm = 1
 assert(peripheral.getType("back") == "modem", "Personal computer must have a modem attached!")
 rednet.open("back")
@@ -23,7 +23,7 @@ end
 local currentBet = 32
 local raiseable = true
 local raiseAmount = ""
-local isActive = true
+local isActive = false
 -- lobby -> viewCards 
 --  -> exit
 --  -> fold
@@ -177,6 +177,7 @@ function onPlayerStateChanged(senderId, message)
 end
 
 function onIsActivePlayer(senderId, message)
+	print (string.format("Server informed us we are active: %s", textutils.serialize(message)))
 	isActive = true
 	currentBet = message.currentBet
 end
