@@ -126,7 +126,7 @@ function processDisk(diskItem)
 end
 
 function setupComputer(computerItem, diskData)
-	if (not tryMountItem(diskItem, "disk")) then
+	if (not tryMountItem(computerItem, "personal computer")) then
 		return false
 	end
 	
