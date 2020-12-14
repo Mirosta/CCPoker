@@ -398,7 +398,7 @@ function onPlayerJoined(senderId, message)
 	print(string.format("%s joined the game: %s", senderId, textutils.serialize(message)))
 	local playerIndex = 1 -- TODO: Decide index correctly
 	players[playerIndex].receiverId = senderId
-	players[playerIndex].chips = chips
+	players[playerIndex].chips = message.player.chips or 0
 	playersByReceiverId[senderId] = players[playerIndex]
 	sendStartGameMessage(players[playerIndex])
 	sendPlayerStateMessage(players[playerIndex])

@@ -30,11 +30,11 @@ function loadPlayerState()
 end
 
 local player = loadPlayerState()
+assert(player ~= nil, "Unable to load player state")
 player.drawChips = player.chips
 player.cards = {}
 player.bettingChips = 0
 
-assert(player ~= nil, "Unable to load player state")
 
 function savePlayerState()
 	local f = io.open("/player.conf", "w")
