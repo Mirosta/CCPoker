@@ -136,6 +136,22 @@ function setupComputer(computerItem, diskData)
 	return success
 end
 
+function supplyComputer()
+	local computerItem = findComputer()
+	if (not computerItem) then
+		print ("WARNING: Failed to find computer to supply")
+		return false
+	end
+	suckFromPlinth(false)
+	suckToPlinth(true)
+	turtle.select(computerItem.slot)
+	if (not turtle.drop()) then
+		print ("WARNING: Failed to supply computer to crate")
+		return false
+	end
+	return true
+end
+
 assert(peripheral.getType("bottom") == "drive", "Must have a drive attached below this turtle")
 
 local modemSide = findModem()
