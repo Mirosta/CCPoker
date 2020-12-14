@@ -333,7 +333,7 @@ function finishPot(pot)
 		splitPot(pot, winningPIs)
 	end
 	for _, pI in ipairs(winningPIs) do
-		local player = players[winningPIs]
+		local player = players[pI]
 		if (player.receiverId) then
 			sendPlayerStateMessage(player)
 		end
