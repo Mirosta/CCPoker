@@ -1,6 +1,6 @@
 local pokerRender = require("pokerRender")
 local pokerProtocol = require("pokerProtocol")
-local player = {name="Tom", cards={{number="5", suit="H"}, {number="Q", suit="D"}}, chips = 1000}
+local player = {name="Tom", cards={{number="5", suit="H"}, {number="Q", suit="D"}}, chips = 20, bettingChips=10}
 local frm = 1
 assert(peripheral.getType("back") == "modem", "Personal computer must have a modem attached!")
 rednet.open("back")
@@ -120,13 +120,18 @@ function bet()
 end
 
 function fold()
+	sendFoldMessage()
 	changeVisibilityGroup("fold")
 end
 
 function onBet(totalRaised)
 	--print(totalRaised + currentBet)
 	raiseable = false
-	player.chips = player.chips - totalRaised - currentBet
+	local amountBet = math.min(player.chips, totalRaised + currentBet)
+	player.chips = player.chips - amountBet
+	player.bettingChips = player.bettingChips + amountBet
+	sendBetMessage(amountBet)
+	isActive = false
 	changeState("viewCards")
 end
 
@@ -161,7 +166,23 @@ function onGameStarted()
 	changeState("viewCards")
 end
 
+function onPlayerStateChanged(senderId, message)
+	if (not message.state) then
+		print("WARNING: Server sent nil state, ignoring")
+		return
+	end
+	for k, v in pairs(message.state) do
+		player[k] = v
+	end
+end
+
+function onIsActivePlayer()
+	isActive = true
+end
+
 pokerProtocol.addActionHandler("start", onGameStarted)
+pokerProtocol.addActionHandler("playerState", onPlayerStateChanged)
+pokerProtocol.addActionHandler("activePlayer", onIsActivePlayer)
 
 function drawButton(to, button, isActive)
 	if (not button.visible) then
@@ -351,7 +372,7 @@ while (true) do
 				if (char >= "0" and char <= "9") then
 					raiseAmount = raiseAmount .. char
 					if ((tonumber(raiseAmount) or 0) + currentBet > player.chips) then
-						raiseAmount = tostring(player.chips - currentBet)
+						raiseAmount = tostring(math.max(0, player.chips - currentBet))
 					end
 				end
 			end

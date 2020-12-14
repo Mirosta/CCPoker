@@ -21,7 +21,7 @@ local players = {
 	{name = "Tom", location=2, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=770, drawChips=770, bettingChips=0},
 	{name = "Tom", location=8, cards={}, flipped=true, quit=false, folded=false, allIn=false, hasActed = false, chips=888, drawChips=888, bettingChips=0},
 }
-
+local playersByReceiverId = {}
 local pots = {}
 
 local sharedCards = {}
@@ -65,6 +65,10 @@ function updateActivePlayer()
 		local player = players[index]
 		if (not player.folded and not player.quit and not player.allIn and (player.bettingChips < pots[1].bettingChips or not player.hasActed)) then
 			activePlayer = index
+			if (player.receiverId) then
+				print("Informing actual player")
+				sendActivePlayerMessage(player)
+			end
 			return false
 		end
 	end
@@ -137,6 +141,9 @@ function newRound()
 		else
 			for i = 1, 2 do
 				table.insert(player.cards, table.remove(deck))
+			end
+			if (player.receiverId) then
+				sendPlayerStateMessage(player)
 			end
 		end
 	end
@@ -223,6 +230,7 @@ function onBet(player, amount)
 		table.insert(pots, 1, createPot())
 		print (string.format("Detected player all in, there are now %d pots", #pots))
 	end
+	return amount
 end
 
 function onFold(player)
@@ -322,6 +330,12 @@ function finishPot(pot)
 	else
 		splitPot(pot, winningPIs)
 	end
+	for _, pI in ipairs(winningPIs) do
+		local player = players[winningPIs]
+		if (player.receiverId) then
+			sendPlayerStateMessage(player)
+		end
+	end
 	pot.chips = 0
 
 	description = winningDescription
@@ -362,12 +376,51 @@ function findModem()
 	error("Must have a modem attached to use this script")
 end
 
+function sendStartGameMessage(player)
+	pokerProtocol.sendMessage(player.receiverId, {action = "start"})
+end
+
+function sendActivePlayerMessage(player)
+	pokerProtocol.sendMessage(player.receiverId, {action = "activePlayer", currentBet=pots[1].bettingChips - player.bettingChips})
+end
+
+function sendPlayerStateMessage(player)
+	pokerProtocol.sendMessage(player.receiverId, {action = "playerState", state = player})
+end
+
 function onPlayerJoined(senderId, message)
 	print(string.format("%s joined the game: %s", senderId, textutils.serialize(message)))
 	players[1].receiverId = senderId
+	playersByReceiverId[senderId] = players[1]
+	sendStartGameMessage(players[1])
+end
+
+function onPlayerBet(senderId, message)
+	local player = playersByReceiverId[senderId]
+	if (not player) then
+		print("Unknown player with receiverId %s", senderId)
+		return
+	end
+	if (not message.betAmount) then
+		print("WARNING: No bet amount given from %s", senderId)
+		return
+	end
+	local actualAmount = onBet(player, message.betAmount)
+	sendPlayerStateMessage(player)
+end
+
+function onPlayerFold(senderId, message)
+	local player = playersByReceiverId[senderId]
+	if (not player) then
+		print("Unknown player with receiverId %s", senderId)
+		return
+	end
+	onFold(player)
 end
 
 pokerProtocol.addActionHandler("join", onPlayerJoined)
+pokerProtocol.addActionHandler("bet", onPlayerBet)
+pokerProtocol.addActionHandler("fold", onPlayerFold)
 
 local modemSide = findModem()
 rednet.open(modemSide)
