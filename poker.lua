@@ -494,7 +494,7 @@ while (true) do
 			break
 		elseif (result[1] == "monitor_touch") then
 			nextState()
-		elseif (eventName == "modem_message") then
+		elseif (result[1] == "modem_message") then
 			print ("Ignoring modem message")
 		elseif (result[1] == "rednet_message") then
 			local _, senderId, message, protocol = table.unpack(result)

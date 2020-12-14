@@ -176,8 +176,9 @@ function onPlayerStateChanged(senderId, message)
 	end
 end
 
-function onIsActivePlayer()
+function onIsActivePlayer(senderId, message)
 	isActive = true
+	currentBet = message.currentBet
 end
 
 pokerProtocol.addActionHandler("start", onGameStarted)
