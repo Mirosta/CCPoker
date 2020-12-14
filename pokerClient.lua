@@ -349,7 +349,7 @@ while (true) do
 		drawString(pokerRender.screen, "you want", 18, vector.new(pokerRender.screen.width / 2 - 4, 8), colors.gray, colors.white)
 		drawString(pokerRender.screen, "to fold?", 18, vector.new(pokerRender.screen.width / 2 - 4, 9), colors.gray, colors.white)
 	elseif (uiState == "viewCards" and isActive) then
-		drawString(pokerRender.screen, "Your Turn", 9, vector.new(pokerRender.screen.width / 2 - 4.5, 3), colors.gray, ((frm % 20) < 10) and colors.white or colors.yellow)
+		drawString(pokerRender.screen, "Your Turn", 9, vector.new(pokerRender.screen.width / 2 - 4.5, 2), ((frm % 40) < 20) and colors.gray or colors.black, ((frm % 40) < 20) and colors.white or colors.yellow)
 	end
 
 	pokerRender.screen:output(pokerRender.monitor)
