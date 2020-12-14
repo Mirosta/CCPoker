@@ -5,7 +5,7 @@ local hands = require('hands')
 local bigBlind = 4
 local smallBlind = 2
 
-io.output("/poker.log")
+--io.output("/poker.log")
 function print(text)
     io.write(text .. "\n")
     io.flush()

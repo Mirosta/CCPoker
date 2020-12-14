@@ -145,9 +145,8 @@ function onQuit()
 	
 end
 
-function onJoined(senderId, message)
-	print ("Game starting")
-	print (textutils.serialize(message))
+function onJoined()
+	print ("Game joined")
 	lobbyStatus = "Waiting to Start"
 end
 
@@ -161,12 +160,13 @@ local function sendJoinMessage()
 	pokerProtocol.sendMessage(serverReceiverId, {action="join", player=player}, onJoined)
 end
 
-function onGameStarted()
+function onGameStarted(senderId, message)
 	print("Game starting")
 	changeState("viewCards")
 end
 
 function onPlayerStateChanged(senderId, message)
+	print (string.format("Got state change from server: %s", message))
 	if (not message.state) then
 		print("WARNING: Server sent nil state, ignoring")
 		return
