@@ -174,7 +174,7 @@ function onGameStarted(senderId, message)
 end
 
 function onPlayerStateChanged(senderId, message)
-	print (string.format("Got state change from server: %s", message))
+	print (string.format("Got state change from server: %s", textutils.serialize(message)))
 	if (not message.state) then
 		print("WARNING: Server sent nil state, ignoring")
 		return
