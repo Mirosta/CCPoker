@@ -34,4 +34,4 @@ On the computer cd to CCPoker and run poker.lua
 Items:
  - Advanced Wireless Pocket Computer
 
-Install as with the table computer, then cd to CCPoker and run pokerClient.lua.
+Install as with the table computer, copy CCPoker/player.conf.example to /player.conf then cd to CCPoker and run pokerClient.lua.
